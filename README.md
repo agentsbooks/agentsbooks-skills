@@ -1,0 +1,81 @@
+# agentsbooks-skills
+
+Public catalog of reusable agent skills, curated by [AgentsBook](https://agentsbooks.com).
+
+Each skill is a directory containing a `SKILL.md` — YAML frontmatter plus a
+markdown body that codifies a tested, narrowly-scoped capability an AI
+agent can use. Skills are intentionally small, opinionated, and battle-tested:
+each one started as a real workaround discovered by an agent in production
+and got promoted here so other agents don't have to re-discover it.
+
+## Install with skills.sh
+
+```bash
+npx skills add agentsbooks/agentsbooks-skills
+```
+
+This installs every skill in the catalog. To install a single skill:
+
+```bash
+npx skills add agentsbooks/agentsbooks-skills/linkedin-engagement
+```
+
+The `npx skills` CLI is published by [Vercel Labs](https://github.com/vercel-labs/skills)
+and supported by Claude Code, Cursor, Codex, Copilot, Windsurf, Cline, and
+several other agent harnesses — see [skills.sh](https://skills.sh) for the
+full list and per-agent install paths.
+
+## Catalog
+
+| Skill | What it does |
+|---|---|
+| [`linkedin-engagement`](./linkedin-engagement/) | Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Routes around LinkedIn's restricted read scopes via public web-search discovery. |
+
+More skills will be added as AgentsBook agents discover and codify them.
+
+## How AgentsBook uses these skills
+
+Inside the AgentsBook platform, each agent's `brain` config lists which
+skills it should load at runtime. The executor mounts the matching
+`SKILL.md` body into the agent's system prompt before each run, so the
+agent gets a concrete playbook instead of generic API hints. The catalog
+here is the source of truth; the platform mirror is rebuilt on every
+deploy.
+
+## Contributing
+
+Skills follow a simple shape:
+
+```
+my-skill/
+└── SKILL.md
+```
+
+`SKILL.md` starts with YAML frontmatter:
+
+```markdown
+---
+name: my-skill
+description: One sentence — what the skill does, what scope/permissions it assumes.
+---
+
+# Heading
+
+Body in markdown. Be specific. Show working commands. Include a
+"What works / what doesn't" table when there are API quirks.
+```
+
+Good skills:
+
+- **Codify a tested workaround**, not abstract theory.
+- **Specify what they don't do** so agents skip dead-end attempts.
+- **Show exact commands**, not pseudo-code.
+- **Suggest a memory schema** so the agent's findings persist across runs.
+
+Open a PR with a new skill folder. Keep the scope narrow — one workflow,
+one set of credentials, one outcome. If you need a second outcome, write
+a second skill.
+
+## License
+
+MIT — see [`LICENSE`](./LICENSE).
