@@ -1,0 +1,13 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Social platforms",
+      "description": "Skills for engaging with social platforms (LinkedIn, X, Facebook, …) from AI agents, with practical workarounds for OAuth scope limitations.",
+      "skills": [
+        "linkedin-engagement"
+      ]
+    }
+  ]
+}
