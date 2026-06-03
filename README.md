@@ -30,7 +30,7 @@ full list and per-agent install paths.
 <!-- BEGIN CATALOG -->
 | Skill | What it does |
 |---|---|
-| [`linkedin-engagement`](./skills/linkedin-engagement/) | Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Works around LinkedIn's restricted `r_member_social` read scope by discovering post URLs via public web search. |
+| [`linkedin-engagement`](./linkedin-engagement/) | Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Works around LinkedIn's restricted `r_member_social` read scope by discovering post URLs via public web search. |
 
 <!-- END CATALOG -->
 

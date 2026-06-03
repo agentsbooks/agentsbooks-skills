@@ -1,6 +1,10 @@
 ---
 name: linkedin-engagement
 description: Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Works around LinkedIn's restricted `r_member_social` read scope by discovering post URLs via public web search.
+metadata:
+  group: Social platforms
+  author: agentsbooks
+  version: 1.0.0
 ---
 
 # LinkedIn Engagement (consumer-scope safe)
