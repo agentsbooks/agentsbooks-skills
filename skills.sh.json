@@ -6,7 +6,8 @@
       "title": "Social platforms",
       "description": "Skills for engaging with social platforms (LinkedIn, X, Facebook, \u2026) from AI agents, with practical workarounds for OAuth scope limitations.",
       "skills": [
-        "linkedin-engagement"
+        "linkedin-engagement",
+        "x-twitter-scraper"
       ]
     }
   ]
