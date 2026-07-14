@@ -3,6 +3,20 @@
   "notGrouped": "bottom",
   "groupings": [
     {
+      "title": "Analytics",
+      "description": "Skills in the Analytics group.",
+      "skills": [
+        "metabase-api"
+      ]
+    },
+    {
+      "title": "Infrastructure",
+      "description": "Skills in the Infrastructure group.",
+      "skills": [
+        "1password-secrets"
+      ]
+    },
+    {
       "title": "Social platforms",
       "description": "Skills for engaging with social platforms (LinkedIn, X, Facebook, \u2026) from AI agents, with practical workarounds for OAuth scope limitations.",
       "skills": [

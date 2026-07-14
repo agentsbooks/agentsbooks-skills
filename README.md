@@ -30,7 +30,9 @@ full list and per-agent install paths.
 <!-- BEGIN CATALOG -->
 | Skill | What it does |
 |---|---|
+| [`1password-secrets`](./1password-secrets/) | Read secrets (API keys, credentials, config values) from the connected 1Password vault using the preinstalled `op` CLI. Works with both service-account and Connect-server connections — authentication is already done via environment variables. |
 | [`linkedin-engagement`](./linkedin-engagement/) | Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Works around LinkedIn's restricted `r_member_social` read scope by discovering post URLs via public web search. |
+| [`metabase-api`](./metabase-api/) | Query the connected Metabase instance (saved questions, dashboards, ad-hoc SQL) using its REST API with static API-key authentication. Covers the x-api-key header, running cards, and native queries. |
 
 <!-- END CATALOG -->
 
