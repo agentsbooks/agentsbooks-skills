@@ -3,6 +3,13 @@
   "notGrouped": "bottom",
   "groupings": [
     {
+      "title": "Advertising",
+      "description": "Skills in the Advertising group.",
+      "skills": [
+        "google-ads-api"
+      ]
+    },
+    {
       "title": "Analytics",
       "description": "Skills in the Analytics group.",
       "skills": [

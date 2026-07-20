@@ -31,6 +31,7 @@ full list and per-agent install paths.
 | Skill | What it does |
 |---|---|
 | [`1password-secrets`](./1password-secrets/) | Read secrets (API keys, credentials, config values) from the connected 1Password vault using the preinstalled `op` CLI. Works with both service-account and Connect-server connections — authentication is already done via environment variables. |
+| [`google-ads-api`](./google-ads-api/) | Read Google Ads accounts and (when explicitly allowed) change campaigns via the Google Ads REST API using the connected OAuth token + developer token. Use for reporting with GAQL (campaigns, ad groups, keywords, metrics, recommendations) and for guarded spend changes (budgets, pausing, negative keywords). Covers the required headers, the searchStream reporting call, budget-safety rules, and how to wire Google's official read-only MCP server. |
 | [`linkedin-engagement`](./linkedin-engagement/) | Find and engage with LinkedIn posts (comment, like) using only the consumer-grade `w_member_social` OAuth scope. Works around LinkedIn's restricted `r_member_social` read scope by discovering post URLs via public web search. |
 | [`metabase-api`](./metabase-api/) | Query the connected Metabase instance (saved questions, dashboards, ad-hoc SQL) using its REST API with static API-key authentication. Covers the x-api-key header, running cards, and native queries. |
 
