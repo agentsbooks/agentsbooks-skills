@@ -13,6 +13,7 @@
       "title": "Analytics",
       "description": "Skills in the Analytics group.",
       "skills": [
+        "google-search-console",
         "metabase-api"
       ]
     },
