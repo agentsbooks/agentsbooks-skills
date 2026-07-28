@@ -43,7 +43,8 @@ they will 403 with `w_member_social`. Jump straight to the workflow below.
 | `/v2/socialActions/{URN}/comments` | POST | ✅ | Write a comment |
 | `/v2/socialActions/{URN}/comments` | GET | ⚠️ | Often 403; treat as unavailable |
 | `/v2/socialActions/{URN}/likes` | POST | ✅ | Add a like |
-| `/rest/posts` | POST | ✅ | Create a new post |
+| `/rest/posts` | POST | ✅ | Publish a post — **live and public, once only** |
+| `/rest/posts/{URN}` | DELETE | ✅ | Delete your own post — **needs the URN you recorded** |
 
 **Anti-pattern:** trying `/v2/me`, then `/rest/posts?q=author`, then giving up
 when both 403. That wastes ~$0.005 per try and produces no engagement.
@@ -192,6 +193,111 @@ invocations dedupe instantly instead of re-discovering.
 
 ---
 
+## Publishing a post to your own feed
+
+`POST /rest/posts` publishes **immediately and publicly** to the member's real
+feed. There is no draft mode, no preview, and no sandbox on a consumer token.
+Every call is visible to their entire network the moment it returns `201`.
+
+### Hard rules
+
+1. **Never publish a test or probe post.** No "Test post", no "please ignore",
+   no placeholder copy. If you want to check the token or the API version,
+   use `GET /v2/userinfo` — it exercises the same auth and publishes nothing.
+2. **Publish exactly once per run.** Compose the final copy first, then make a
+   single POST. Never loop the publish call over API versions, retries, or
+   phrasings.
+3. **A post you cannot prove went out is not a reason to publish again.**
+   Losing the URN is a reporting gap, not a delivery failure.
+
+### Step 1 — Pin the API version
+
+`/rest/posts` requires a `LinkedIn-Version` header. Use **`202503`**, which is
+active for consumer tokens. If you must confirm a version is live, probe with
+a **GET** — never by POSTing to `/rest/posts`:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" \
+  -H "Authorization: Bearer $LINKEDIN_ACCESS_TOKEN" \
+  -H "LinkedIn-Version: 202503" \
+  "https://api.linkedin.com/v2/userinfo"
+```
+
+### Step 2 — Publish once, and capture the URN from the response header
+
+The share URN comes back in the **`x-restli-id` response header**, not the body
+(the body is empty on success). Dump the headers with `-D` on the same request
+that publishes — this is what removes any need for a second POST:
+
+```bash
+PERSON_ID="<your_sub_from_step_1>"
+jq -nc \
+  --arg author "urn:li:person:${PERSON_ID}" \
+  --arg text "$(cat /tmp/post_body.txt)" \
+  '{author: $author,
+    commentary: $text,
+    visibility: "PUBLIC",
+    distribution: {feedDistribution: "MAIN_FEED",
+                   targetEntities: [],
+                   thirdPartyDistributionChannels: []},
+    lifecycleState: "PUBLISHED",
+    isReshareDisabledByAuthor: false}' > /tmp/post.json
+
+curl -s -X POST -D /tmp/headers.txt -o /tmp/body.txt \
+  -H "Authorization: Bearer $LINKEDIN_ACCESS_TOKEN" \
+  -H "X-Restli-Protocol-Version: 2.0.0" \
+  -H "LinkedIn-Version: 202503" \
+  -H "Content-Type: application/json" \
+  "https://api.linkedin.com/rest/posts" \
+  -d @/tmp/post.json
+
+# 201 = published. The share URN is in the x-restli-id header.
+grep -i '^x-restli-id:' /tmp/headers.txt | tr -d '\r' | awk '{print $2}'
+```
+
+The post URL is
+`https://www.linkedin.com/feed/update/<share-urn>`.
+
+### Step 3 — Interpret the response, then stop
+
+| Response | Meaning | What to do |
+|---|---|---|
+| `201 Created` | Published | Record the `x-restli-id` URN to memory. **Stop.** |
+| `422 DUPLICATE_POST` | An identical post is **already live** | Your content is published. **Stop.** |
+| `401 Unauthorized` | Token expired | Report to the user. Do not retry. |
+| `403 ACCESS_DENIED` | Scope missing for this surface | Report. Do not retry on another version. |
+
+**`DUPLICATE_POST` means success, not failure.** LinkedIn is telling you the
+content is already on the feed. **Do NOT reword the copy, change punctuation,
+or alter a character to get past the duplicate check** — that guard is the only
+thing standing between a retry loop and a feed full of near-identical posts.
+Treat it as a `201` you already earned, record it, and move on.
+
+If you never captured the URN, say so plainly in your final report
+("published, URN not captured") rather than publishing a second time.
+
+### Step 4 — If you published something wrong, delete it by URN
+
+`DELETE /rest/posts/{ENC_URN}` works on a consumer token and returns
+**`204 No Content`**. This is the *only* undo available, and it needs the URN
+from Step 2 — which is the second reason never to lose it.
+
+```bash
+ENC_URN=$(python3 -c "import urllib.parse; print(urllib.parse.quote('urn:li:share:7487402545397780481', safe=''))")
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE \
+  -H "Authorization: Bearer $LINKEDIN_ACCESS_TOKEN" \
+  -H "LinkedIn-Version: 202503" \
+  -H "X-Restli-Protocol-Version: 2.0.0" \
+  "https://api.linkedin.com/rest/posts/${ENC_URN}"
+```
+
+**Only ever delete a URN you recorded yourself this run.** Never guess or
+scan URN values — they are global across all of LinkedIn, and a wrong guess
+means deleting an unrelated post of the member's. If you don't have the URN,
+report it and let the member remove it from the UI.
+
+---
+
 ## Comment quality rules
 
 - Keep comments short (≤30 words).
@@ -210,6 +316,8 @@ invocations dedupe instantly instead of re-discovering.
 | `403 partnerApiPostsExternal` on `/rest/posts?q=author` | Missing `r_member_social` | Expected. Use web-search discovery instead. |
 | `401 Unauthorized` on any POST | Token expired | Report to user; cannot self-recover without re-auth. |
 | `429 Too Many Requests` | Engaging too fast | Sleep 30s and continue; cap at ~10 engagements per run. |
+| `422 DUPLICATE_POST` on `/rest/posts` | The post is **already live** | Treat as success. Record it and stop. Never reword to get around it. |
+| `201` on `/rest/posts` but no URN captured | Read the body instead of `x-restli-id` | Report "published, URN not captured". **Never publish again to obtain an ID.** |
 | Yahoo returns 0 posts | Search engine guard or bad query | Try Bing; then DuckDuckGo HTML; then `WebFetch`. |
 | All search engines empty | Topic too niche, or all results in dedupe list | Broaden keywords; engage fewer posts than requested. |
 
@@ -221,5 +329,11 @@ invocations dedupe instantly instead of re-discovering.
   Skip them; they always 403 on consumer tokens.
 - **Does not** scrape LinkedIn directly (`https://www.linkedin.com/...`).
   LinkedIn aggressively blocks; web-search discovery is the safe path.
-- **Does not** handle DMs, connection requests, or content beyond comments
-  and likes. Those need additional scopes.
+- **Does not** handle DMs or connection requests. Those need additional scopes.
+- **Does not** offer any way to publish a draft, a preview, or a test post.
+  Everything `POST /rest/posts` sends goes live on the member's real feed.
+- **Does not** let you find a post you did not record. Deleting works
+  (see below), but only by URN — and `GET /rest/posts` is 403 on a consumer
+  token, so there is no way to look one up after the fact. A post whose
+  `x-restli-id` you dropped can only be removed by the member, by hand, from
+  the LinkedIn UI. Compose carefully, publish once, and record the URN.
