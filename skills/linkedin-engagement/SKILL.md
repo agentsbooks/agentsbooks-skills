@@ -115,16 +115,18 @@ ENC_URN=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$URN', safe
 The URL-encoded form (`urn%3Ali%3Aactivity%3A7460...`) is what the
 `socialActions` endpoint requires in its path.
 
-### Step 4 — Deduplicate against memory
+### Step 4 — Deduplicate against your brain
 
-Before commenting, check that you haven't already engaged with this post.
-Memory at `/workspace/memory/input.json` should track prior `activity_id`s
-under a stable schema. Drop already-engaged IDs from your candidate list:
+Before commenting, check that you haven't already engaged with this post. Your
+engagement log lives in your brain at
+`/workspace/brain/kv/linkedin/engagements.json` — an ordinary file, already on
+disk if you have run before. Drop already-engaged IDs from your candidate list:
 
 ```bash
-# Build a sorted list of activity IDs you've already engaged with
-jq -r '.. | objects | (.activity_id // .activity_urn // empty) | tostring | gsub("urn:li:activity:"; "")' \
-  /workspace/memory/input.json | grep -E '^[0-9]+$' | sort -u > /tmp/already_engaged.txt
+LOG=/workspace/brain/kv/linkedin/engagements.json
+: > /tmp/already_engaged.txt
+[ -s "$LOG" ] && jq -r '.. | objects | (.activity_id // .activity_urn // empty) | tostring | gsub("urn:li:activity:"; "")' \
+  "$LOG" | grep -E '^[0-9]+$' | sort -u > /tmp/already_engaged.txt
 ```
 
 ### Step 5 — Post a comment
@@ -144,7 +146,7 @@ curl -s -X POST \
 
 A successful response is `201 Created` with a JSON body containing
 `"id": "<commentUrn>"` and `"$URN": "urn:li:comment:(...)"`. **Save the
-returned comment URN to memory** — it's both proof of engagement and the
+returned comment URN to your brain** — it's both proof of engagement and the
 dedupe key for next run.
 
 ### Step 6 — Add a like
@@ -162,10 +164,13 @@ curl -s -X POST \
 Likes can sometimes return `409 Conflict` if you already liked the post —
 that's fine, treat as success.
 
-### Step 7 — Write back to memory
+### Step 7 — Write back to your brain
 
-After each successful comment, append to `/workspace/memory/output.json`
-under a stable schema. Suggested shape:
+After each successful comment, rewrite
+`/workspace/brain/kv/linkedin/engagements.json` with the full log — the
+entries already there plus the new one — under a stable schema. Everything you
+write under `/workspace/brain/` is stored automatically when the run ends and
+is on disk again next run. Suggested shape:
 
 ```json
 {
@@ -188,8 +193,10 @@ under a stable schema. Suggested shape:
 }
 ```
 
-This memory shape is what makes the skill **cheap on re-runs**: future
-invocations dedupe instantly instead of re-discovering.
+This shape is what makes the skill **cheap on re-runs**: future invocations
+dedupe instantly instead of re-discovering. Never put the access token in that
+file — a credential in a brain path is refused when the tree is stored and the
+run is reported failed.
 
 ---
 
@@ -262,7 +269,7 @@ The post URL is
 
 | Response | Meaning | What to do |
 |---|---|---|
-| `201 Created` | Published | Record the `x-restli-id` URN to memory. **Stop.** |
+| `201 Created` | Published | Record the `x-restli-id` URN to your brain. **Stop.** |
 | `422 DUPLICATE_POST` | An identical post is **already live** | Your content is published. **Stop.** |
 | `401 Unauthorized` | Token expired | Report to the user. Do not retry. |
 | `403 ACCESS_DENIED` | Scope missing for this surface | Report. Do not retry on another version. |
