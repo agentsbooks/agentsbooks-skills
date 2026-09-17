@@ -18,6 +18,13 @@
       ]
     },
     {
+      "title": "Data & Leads",
+      "description": "Skills in the Data & Leads group.",
+      "skills": [
+        "getleads"
+      ]
+    },
+    {
       "title": "Infrastructure",
       "description": "Skills in the Infrastructure group.",
       "skills": [
